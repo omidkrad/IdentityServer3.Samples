@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-using WebHost.IdSvr;
-using Thinktecture.IdentityManager;
-using Thinktecture.IdentityManager.Configuration;
-using Thinktecture.IdentityServer.Core.Configuration;
 using WebHost.IdMgr;
+using WebHost.IdSvr;
+using IdentityManager.Configuration;
+using Thinktecture.IdentityServer.Core.Configuration;
+using Microsoft.AspNet.Identity;
 using Owin;
+
+using ClaimTypes = IdentityManager.Constants.ClaimTypes;
 
 namespace WebHost
 {
-    internal class Startup
+    internal partial class Startup
     {
         public void Configuration(IAppBuilder app)
         {
+            // Configure ASP.NET Identity Framework
+            ConfigureAuth(app);
+
+            // Configure IdentityManager
             app.Map("/admin", adminApp =>
             {
                 var factory = new IdentityManagerServiceFactory();
@@ -34,9 +40,18 @@ namespace WebHost
 
                 adminApp.UseIdentityManager(new IdentityManagerOptions()
                 {
+                    SecurityConfiguration = new HostSecurityConfiguration
+                    {
+                        HostAuthenticationType = DefaultAuthenticationTypes.ApplicationCookie,
+                        NameClaimType = ClaimTypes.Name,
+                        RoleClaimType = ClaimTypes.Role,
+                        AdminRoleName = "Admin"
+                    },
                     Factory = factory
                 });
             });
+
+            // Configure IdentityServer
             app.Map("/core", core =>
             {
                 var idSvrFactory = Factory.Configure();
